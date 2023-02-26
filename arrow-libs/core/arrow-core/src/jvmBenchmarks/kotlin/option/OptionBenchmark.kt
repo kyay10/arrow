@@ -1,0 +1,73 @@
+package option
+
+import arrow.core.*
+import arrow.core.raise.Raise
+import arrow.core.raise.option
+import kotlinx.benchmark.*
+import kotlinx.coroutines.runBlocking
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
+
+@State(Scope.Benchmark)
+class OptionBenchmark {
+  @Param("100", "1000", "10000", "100000", "1000000")
+  var iterations = 0
+
+  @Benchmark
+  fun nestedOptions(blackhole: Blackhole) {
+    for (i in 0..iterations) {
+      val option = Some(i)
+      val nestedOption = option.map(::Some)
+      blackhole.consume(nestedOption)
+    }
+  }
+
+  @Benchmark
+  fun nestedOptionsBoxed(blackhole: Blackhole) {
+    buildList(iterations) {
+      for (i in 0..iterations) {
+        add(Some(i))
+      }
+    }.map { it.map(::Some) }.forEach(blackhole::consume)
+  }
+
+  @Benchmark
+  fun someComprehension(blackhole: Blackhole) = runBlocking {
+    for (i in 0..iterations)
+      blackhole.consume(option {
+        val option = Some(i)
+        val stringified = option.map { intToString(it) }
+        // stringified has to be preserved through suspension calls
+        val original = stringified.map { stringToInt(it) }
+        blackhole.consume(original)
+        stringified
+      })
+  }
+
+  @Benchmark
+  fun noneComprehension(blackhole: Blackhole) = runBlocking {
+    for (i in 0..iterations)
+      blackhole.consume(option {
+        val option = Some(i)
+        val stringified = option.map { intToInvalidString(it) }
+        // stringified has to be preserved through suspension calls
+        val original = stringified.map { stringToInt(it) }
+        blackhole.consume(original)
+        stringified
+      })
+  }
+
+
+  suspend fun intToString(int: Int): String = suspendCoroutine {
+    it.resume(int.toString())
+  }
+
+  suspend fun intToInvalidString(int: Int): String = suspendCoroutine {
+    it.resume("$int.0")
+  }
+
+  context(Raise<None>)
+  suspend fun stringToInt(string: String): Int = suspendCoroutine {
+    it.resume(string.toIntOrNull() ?: raise(None))
+  }
+}
