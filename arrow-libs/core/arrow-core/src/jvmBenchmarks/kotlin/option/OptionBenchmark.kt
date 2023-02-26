@@ -10,7 +10,7 @@ import kotlin.coroutines.suspendCoroutine
 
 @State(Scope.Benchmark)
 class OptionBenchmark {
-  @Param("100", "1000", "10000", "100000", "1000000")
+  @Param("1000", "10000", "100000")
   var iterations = 0
 
   @Benchmark
