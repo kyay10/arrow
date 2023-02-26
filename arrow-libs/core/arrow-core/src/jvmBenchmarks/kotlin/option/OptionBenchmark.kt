@@ -1,6 +1,7 @@
 package option
 
 import arrow.core.*
+import arrow.core.raise.CancellationExceptionNoTrace
 import arrow.core.raise.Raise
 import arrow.core.raise.option
 import kotlinx.benchmark.*
@@ -70,6 +71,17 @@ class OptionBenchmark {
   }
 
   @Benchmark
+  fun someSingleComprehensionBlocking(blackhole: Blackhole) = blackhole.consume(option {
+    for (i in 0..iterations) {
+      val option = Some(i)
+      val stringified = option.map { intToStringBlocking(it) }
+      val original = stringified.map { stringToIntBlocking(it) }
+      blackhole.consume(original)
+      blackhole.consume(stringified)
+    }
+  })
+
+  @Benchmark
   fun noneComprehensionBlocking(blackhole: Blackhole) {
     for (i in 0..iterations)
       blackhole.consume(option {
@@ -80,6 +92,19 @@ class OptionBenchmark {
         stringified
       })
   }
+
+  @Benchmark
+  fun noneTryCatchComprehensionBlocking(blackhole: Blackhole) = blackhole.consume(option {
+    for (i in 0..iterations) {
+      try {
+        val option = Some(i)
+        val stringified = option.map { intToInvalidStringBlocking(it) }
+        val original = stringified.map { stringToIntBlocking(it) }
+        blackhole.consume(original)
+        blackhole.consume(stringified)
+      } catch (e: CancellationExceptionNoTrace) { /* ignored */ }
+    }
+  })
 
   @Benchmark
   fun someWithoutComprehension(blackhole: Blackhole) {
@@ -94,13 +119,13 @@ class OptionBenchmark {
 
   @Benchmark
   fun noneWithoutComprehension(blackhole: Blackhole) {
-    for (i in 0..iterations){
-        val option = Some(i)
-        val stringified = option.map { intToInvalidStringBlocking(it) }
-        val original = stringified.flatMap { stringToIntBlockingOption(it) }
-        blackhole.consume(original)
-        blackhole.consume(stringified)
-      }
+    for (i in 0..iterations) {
+      val option = Some(i)
+      val stringified = option.map { intToInvalidStringBlocking(it) }
+      val original = stringified.flatMap { stringToIntBlockingOption(it) }
+      blackhole.consume(original)
+      blackhole.consume(stringified)
+    }
   }
 
   suspend fun intToString(int: Int): String = suspendCoroutine {
