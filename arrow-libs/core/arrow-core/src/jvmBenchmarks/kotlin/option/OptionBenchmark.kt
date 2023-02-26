@@ -58,12 +58,11 @@ class OptionBenchmark {
   }
 
   @Benchmark
-  fun someComprehensionBlocking(blackhole: Blackhole){
+  fun someComprehensionBlocking(blackhole: Blackhole) {
     for (i in 0..iterations)
       blackhole.consume(option {
         val option = Some(i)
         val stringified = option.map { intToStringBlocking(it) }
-        // stringified has to be preserved through suspension calls
         val original = stringified.map { stringToIntBlocking(it) }
         blackhole.consume(original)
         stringified
@@ -71,7 +70,7 @@ class OptionBenchmark {
   }
 
   @Benchmark
-  fun noneComprehensionBlocking(blackhole: Blackhole){
+  fun noneComprehensionBlocking(blackhole: Blackhole) {
     for (i in 0..iterations)
       blackhole.consume(option {
         val option = Some(i)
@@ -82,6 +81,27 @@ class OptionBenchmark {
       })
   }
 
+  @Benchmark
+  fun someWithoutComprehension(blackhole: Blackhole) {
+    for (i in 0..iterations) {
+      val option = Some(i)
+      val stringified = option.map { intToStringBlocking(it) }
+      val original = stringified.flatMap { stringToIntBlockingOption(it) }
+      blackhole.consume(original)
+      blackhole.consume(stringified)
+    }
+  }
+
+  @Benchmark
+  fun noneWithoutComprehension(blackhole: Blackhole) {
+    for (i in 0..iterations){
+        val option = Some(i)
+        val stringified = option.map { intToInvalidStringBlocking(it) }
+        val original = stringified.flatMap { stringToIntBlockingOption(it) }
+        blackhole.consume(original)
+        blackhole.consume(stringified)
+      }
+  }
 
 
   suspend fun intToString(int: Int): String = suspendCoroutine {
@@ -102,4 +122,6 @@ class OptionBenchmark {
 
   context(Raise<Option<Nothing>>)
   fun stringToIntBlocking(string: String): Int = string.toIntOrNull() ?: raise(None)
+
+  fun stringToIntBlockingOption(string: String): Option<Int> = string.toIntOrNull().toOption()
 }
