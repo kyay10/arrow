@@ -13,16 +13,15 @@ plugins {
 }
 
 apply(from = property("TEST_COVERAGE"))
+
 apply(from = property("ANIMALSNIFFER_MPP"))
 
 val enableCompatibilityMetadataVariant =
-  providers.gradleProperty("kotlin.mpp.enableCompatibilityMetadataVariant")
-    .orNull?.toBoolean() == true
+  providers.gradleProperty("kotlin.mpp.enableCompatibilityMetadataVariant").orNull?.toBoolean() ==
+    true
 
 if (enableCompatibilityMetadataVariant) {
-  tasks.withType<Test>().configureEach {
-    exclude("**/*")
-  }
+  tasks.withType<Test>().configureEach { exclude("**/*") }
 }
 
 kotlin {
@@ -30,9 +29,7 @@ kotlin {
     jvm {
       compilations {
         val main by getting
-        val benchmarks by creating {
-          associateWith(main)
-        }
+        val benchmarks by creating { associateWith(main) }
 
         benchmark.targets.add(
           KotlinJvmBenchmarkTarget(
@@ -62,24 +59,12 @@ kotlin {
           implementation(libs.kotest.property)
         }
       }
-      jvmTest {
-        dependencies {
-          runtimeOnly(libs.kotest.runnerJUnit5)
-        }
-      }
+      jvmTest { dependencies { runtimeOnly(libs.kotest.runnerJUnit5) } }
     }
 
-    jvmMain {
-      dependencies {
-        implementation(libs.kotlin.stdlibJDK8)
-      }
-    }
+    jvmMain { dependencies { implementation(libs.kotlin.stdlibJDK8) } }
 
-    jsMain {
-      dependencies {
-        implementation(libs.kotlin.stdlibJS)
-      }
-    }
+    jsMain { dependencies { implementation(libs.kotlin.stdlibJS) } }
 
     val jvmMain by getting
     val jvmBenchmarks by getting {
@@ -102,6 +87,4 @@ tasks.named<KotlinCompile>("compileBenchmarksKotlinJvm") {
   kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 
-allOpen {
-  annotation("org.openjdk.jmh.annotations.State")
-}
+allOpen { annotation("org.openjdk.jmh.annotations.State") }
