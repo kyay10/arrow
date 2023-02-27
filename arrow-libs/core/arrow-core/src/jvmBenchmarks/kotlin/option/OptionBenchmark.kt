@@ -136,7 +136,7 @@ class OptionBenchmark {
     it.resume("$int.0")
   }
 
-  context(Raise<None>)
+  context(Raise<Option<Nothing>>)
   suspend fun stringToInt(string: String): Int = suspendCoroutine {
     it.resume(string.toIntOrNull() ?: raise(None))
   }
@@ -145,7 +145,7 @@ class OptionBenchmark {
 
   fun intToInvalidStringBlocking(int: Int): String = "$int.0"
 
-  context(Raise<None>)
+  context(Raise<Option<Nothing>>)
   fun stringToIntBlocking(string: String): Int = string.toIntOrNull() ?: raise(None)
 
   fun stringToIntBlockingOption(string: String): Option<Int> = string.toIntOrNull().toOption()
