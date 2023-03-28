@@ -1206,6 +1206,31 @@ public fun <A> Iterable<Iterable<A>>.flatten(): List<A> =
   flatMap(::identity)
 
 /**
+ * Applies a function [f] to each element and returns a pair of arrays:
+ * the first one made of those values returned by [f] that were wrapped in [Either.Left],
+ * and the second one made of those wrapped in [Either.Right].
+ * <!--- INCLUDE
+ * import arrow.core.*
+ * import io.kotest.matchers.shouldBe
+ * -->
+ * ```kotlin
+ * fun test() {
+ *   listOf(1, 2, 3, 4)
+ *     .partitionMap {
+ *       if (it % 2 == 0) "even: $it".right() else "odd: $it".left()
+ *     } shouldBe Pair(listOf("odd: 1", "odd: 3"), listOf("even: 2", "even: 4"))
+ * }
+ * ```
+ * <!--- KNIT example-iterable-20.kt -->
+ * <!--- TEST lines.isEmpty() -->
+ */
+public fun <T, A, B> Iterable<T>.partitionMap(f: (T) -> Either<A, B>): Pair<List<A>, List<B>> =
+  fold(Pair(emptyList(), emptyList())) { acc, it ->
+    val (lList, rList) = acc
+    f(it).fold({ Pair(lList.plus(it), rList) }, { Pair(lList, rList.plus(it)) })
+  }
+
+/**
  *  Given [A] is a subtype of [B], re-type this value from Iterable<A> to Iterable<B>
  *
  * ```kotlin
@@ -1307,28 +1332,3 @@ public fun <T> Iterable<Option<T>>.filterOption(): List<T> =
   flatMap { it.fold(::emptyList, ::listOf) }
 
 public fun <T> Iterable<Option<T>>.flattenOption(): List<T> = filterOption()
-
-/**
- * Applies a function [f] to each element and returns a pair of arrays:
- * the first one made of those values returned by [f] that were wrapped in [Either.Left],
- * and the second one made of those wrapped in [Either.Right].
- * <!--- INCLUDE
- * import arrow.core.*
- * import io.kotest.matchers.shouldBe
- * -->
- * ```kotlin
- * fun test() {
- *   listOf(1, 2, 3, 4)
- *     .partitionMap {
- *       if (it % 2 == 0) "even: $it".right() else "odd: $it".left()
- *     } shouldBe Pair(listOf("odd: 1", "odd: 3"), listOf("even: 2", "even: 4"))
- * }
- * ```
- * <!--- KNIT example-iterable-20.kt -->
- * <!--- TEST lines.isEmpty() -->
- */
-public fun <T, A, B> Iterable<T>.partitionMap(f: (T) -> Either<A, B>): Pair<List<A>, List<B>> =
-  fold(Pair(emptyList(), emptyList())) { acc, it ->
-    val (lList, rList) = acc
-    f(it).fold({ Pair(lList.plus(it), rList) }, { Pair(lList, rList.plus(it)) })
-  }
