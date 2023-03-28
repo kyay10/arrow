@@ -7,18 +7,8 @@ package arrow.core
 
 import arrow.core.Either.Left
 import arrow.core.Either.Right
-import arrow.core.raise.Raise
-import arrow.core.raise.either
-import arrow.core.raise.RaiseAccumulate
-import arrow.core.raise.mapOrAccumulate
-import arrow.core.raise.nullable
-import arrow.core.raise.option
-import arrow.core.raise.result
-import arrow.typeclasses.Monoid
-import arrow.typeclasses.MonoidDeprecation
-import arrow.typeclasses.Semigroup
-import arrow.typeclasses.SemigroupDeprecation
-import arrow.typeclasses.combine
+import arrow.core.raise.*
+import arrow.typeclasses.*
 import kotlin.experimental.ExperimentalTypeInference
 import kotlin.jvm.JvmName
 
@@ -1224,11 +1214,14 @@ public fun <A> Iterable<Iterable<A>>.flatten(): List<A> =
  * <!--- KNIT example-iterable-20.kt -->
  * <!--- TEST lines.isEmpty() -->
  */
-public fun <T, A, B> Iterable<T>.partitionMap(f: (T) -> Either<A, B>): Pair<List<A>, List<B>> =
-  fold(Pair(emptyList(), emptyList())) { acc, it ->
-    val (lList, rList) = acc
-    f(it).fold({ Pair(lList.plus(it), rList) }, { Pair(lList, rList.plus(it)) })
+public inline fun <T, A, B> Iterable<T>.partitionMap(f: (T) -> Either<A, B>): Pair<List<A>, List<B>> {
+  val lefts = mutableListOf<A>()
+  val rights = mutableListOf<B>()
+  for (element in this) {
+    f(element).fold(lefts::add, rights::add)
   }
+  return Pair(lefts, rights)
+}
 
 /**
  *  Given [A] is a subtype of [B], re-type this value from Iterable<A> to Iterable<B>
